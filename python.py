@@ -20,8 +20,7 @@ async def python(e):
     stdout, stderr = await execute(code, e)
     formatted_stderr = (
         str(stderr)
-        .split("__code_wrapper__\n")[-1]  # For errors on runtime.
-        .split("exec(formatted_code)\n")[-1]  # For errors while compiling.
+        .split("__code_wrapper__\n")[-1]
         .strip()
     )
     output = (
@@ -76,4 +75,7 @@ async def execute(code, *args):
         [f"\n {l}" for l in code.split("\n")]
     )
     exec(formatted_code)
-    await locals()[fn](*args)
+    try:
+        await locals()[fn](*args)
+    except BaseException:
+        sys.stderr.write(utility.get_traceback())
