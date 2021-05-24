@@ -6,6 +6,7 @@ import sys
 import asyncio
 from functools import wraps
 
+fn = "__code_wrapper__"
 
 @polygon.on(prefix=">")
 async def python(e):
@@ -18,14 +19,9 @@ async def python(e):
     if not code.strip():
         return await e.edit("`No code? no output!`")
     stdout, stderr = await execute(code, e)
-    formatted_stderr = (
-        str(stderr)
-        .split("__code_wrapper__\n")[-1]
-        .strip()
-    )
     output = (
         f"**Code**:\n```{code}```"
-        f"\n\n**stderr**:\n```{formatted_stderr}```"
+        f"\n\n**stderr**:\n```{stderr}```"
         f"\n\n**stdout**:\n```{stdout}```"
     )
     if len(output) > db.get("TelegramLimit"):
@@ -70,12 +66,11 @@ def redirect_console_output(fn):
 
 @redirect_console_output
 async def execute(code, *args):
-    fn = "__code_wrapper__"
     formatted_code = f"async def {fn}(e, *args):" + "".join(
         [f"\n {l}" for l in code.split("\n")]
     )
-    exec(formatted_code)
     try:
+        exec(formatted_code)
         await locals()[fn](*args)
     except BaseException:
-        sys.stderr.write(utility.get_traceback())
+        sys.stderr.write(utility.get_traceback(0))
